@@ -26,7 +26,14 @@ def upgrade() -> None:
     # Enable extensions
     op.execute("CREATE EXTENSION IF NOT EXISTS postgis")
     op.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
-    op.execute("CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE")
+    op.execute("""
+        DO $$ BEGIN
+            CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+        EXCEPTION
+            WHEN undefined_file THEN null;
+            WHEN OTHERS THEN null;
+        END $$;
+    """)
 
     # Enums
     create_enum_safe("zone_status_enum", ["active", "monitoring", "restricted", "archived"])
@@ -147,8 +154,14 @@ def upgrade() -> None:
         sa.Column("metadata_json", sa.JSON(), server_default="{}"),
     )
     op.create_index("ix_sensor_readings_sensor_timestamp", "sensor_readings", ["sensor_id", "timestamp"])
-    # Convert to TimescaleDB hypertable
-    op.execute("SELECT create_hypertable('sensor_readings', 'timestamp', if_not_exists => TRUE)")
+    # Convert to TimescaleDB hypertable if timescaledb is available
+    op.execute("""
+        DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+                PERFORM create_hypertable('sensor_readings', 'timestamp', if_not_exists => TRUE);
+            END IF;
+        END $$;
+    """)
 
     # alerts
     op.create_table(

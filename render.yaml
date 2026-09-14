@@ -1,0 +1,36 @@
+databases:
+  - name: catguard-db
+    databaseName: catguard_db
+    user: catguard
+    plan: free
+    region: oregon
+    ipAllowList: []
+
+services:
+  - type: web
+    name: catguard-api
+    runtime: docker
+    dockerfilePath: apps/api/Dockerfile
+    dockerContext: apps/api
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: catguard-db
+          property: connectionString
+      - key: DATABASE_URL_SYNC
+        fromDatabase:
+          name: catguard-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: REDIS_URL
+        value: redis://localhost:6379/0
+      - key: CORS_ORIGINS
+        value: '["*"]'
