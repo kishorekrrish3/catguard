@@ -20,14 +20,26 @@ import app.models  # noqa: F401 - imports all models via __init__
 
 target_metadata = Base.metadata
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+asyncpg://catguard:catguard_secret@localhost:5432/catguard_db"
-)
-DATABASE_URL_SYNC = os.getenv(
-    "DATABASE_URL_SYNC",
-    "postgresql://catguard:catguard_secret@localhost:5432/catguard_db"
-)
+def _get_async_url() -> str:
+    url = os.getenv("DATABASE_URL", "postgresql+asyncpg://catguard:catguard_secret@localhost:5432/catguard_db")
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif url.startswith("postgresql://") and not url.startswith("postgresql+asyncpg://"):
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
+
+
+def _get_sync_url() -> str:
+    url = os.getenv("DATABASE_URL_SYNC") or os.getenv("DATABASE_URL", "postgresql://catguard:catguard_secret@localhost:5432/catguard_db")
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql://", 1)
+    elif url.startswith("postgresql+asyncpg://"):
+        return url.replace("postgresql+asyncpg://", "postgresql://", 1)
+    return url
+
+
+DATABASE_URL = _get_async_url()
+DATABASE_URL_SYNC = _get_sync_url()
 
 
 def run_migrations_offline() -> None:

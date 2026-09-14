@@ -10,7 +10,15 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from dotenv import load_dotenv
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://catguard:catguard_secret@localhost:5432/catguard_db")
+def _get_db_url() -> str:
+    url = os.getenv("DATABASE_URL", "postgresql+asyncpg://catguard:catguard_secret@localhost:5432/catguard_db")
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif url.startswith("postgresql://") and not url.startswith("postgresql+asyncpg://"):
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
+
+DATABASE_URL = _get_db_url()
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from geoalchemy2.shape import from_shape
