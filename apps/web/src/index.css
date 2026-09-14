@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 142 25% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 142 25% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 142 25% 10%;
+    --primary: 142 71% 25%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 120 40% 95%;
+    --secondary-foreground: 142 45% 18%;
+    --muted: 120 10% 95%;
+    --muted-foreground: 120 10% 40%;
+    --accent: 120 30% 90%;
+    --accent-foreground: 142 45% 18%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 142 15% 88%;
+    --input: 142 15% 88%;
+    --ring: 142 71% 25%;
+    --radius: 0.5rem;
+  }
+  .dark {
+    --background: 142 25% 5%;
+    --foreground: 0 0% 95%;
+    --card: 142 20% 8%;
+    --card-foreground: 0 0% 95%;
+    --primary: 142 60% 40%;
+    --primary-foreground: 142 25% 5%;
+    --secondary: 142 15% 15%;
+    --secondary-foreground: 0 0% 95%;
+    --muted: 142 15% 15%;
+    --muted-foreground: 142 10% 65%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 95%;
+    --border: 142 15% 18%;
+    --input: 142 15% 18%;
+    --ring: 142 60% 40%;
+  }
+}
+@layer base {
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground; }
+}
+.maplibregl-ctrl-bottom-right { bottom: 2rem; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: hsl(var(--muted)); }
+::-webkit-scrollbar-thumb { background: hsl(var(--primary)); border-radius: 3px; }

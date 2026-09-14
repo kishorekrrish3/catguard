@@ -1,0 +1,19 @@
+{
+  "name": "catguard",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter @catguard/web dev",
+    "dev:full": "docker compose up",
+    "build": "pnpm --filter @catguard/web build",
+    "lint": "pnpm --filter @catguard/web lint",
+    "test": "pnpm --filter @catguard/web test",
+    "docker:build": "docker compose build",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down -v"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: timescale/timescaledb-ha:pg16-latest
+        env:
+          POSTGRES_USER: catguard
+          POSTGRES_PASSWORD: catguard_secret
+          POSTGRES_DB: catguard_test
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - "6379:6379"
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 3s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: apps/api/requirements.txt
+
+      - name: Install dependencies
+        working-directory: apps/api
+        run: pip install -r requirements.txt
+
+      - name: Lint (ruff)
+        working-directory: apps/api
+        run: ruff check app/
+
+      - name: Type check (mypy)
+        working-directory: apps/api
+        run: mypy app/ --ignore-missing-imports
+
+      - name: Run tests
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql+asyncpg://catguard:catguard_secret@localhost:5432/catguard_test
+          DATABASE_URL_SYNC: postgresql://catguard:catguard_secret@localhost:5432/catguard_test
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: ci-test-secret-key-must-be-32-chars-min
+          ALGORITHM: HS256
+          APP_ENV: test
+          MINIO_ENDPOINT: localhost:9000
+          MINIO_ACCESS_KEY: test
+          MINIO_SECRET_KEY: testtest
+          MINIO_BUCKET: test-bucket
+          MINIO_SECURE: "false"
+        run: pytest tests/ -v --cov=app --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: apps/api/coverage.xml
+
+  frontend:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Type check
+        working-directory: apps/web
+        run: pnpm exec tsc --noEmit
+
+      - name: Lint
+        working-directory: apps/web
+        run: pnpm lint
+
+      - name: Run tests
+        working-directory: apps/web
+        run: pnpm test --run
+
+      - name: Build
+        working-directory: apps/web
+        env:
+          VITE_API_URL: http://localhost:8000
+          VITE_WS_URL: ws://localhost:8000
+        run: pnpm build

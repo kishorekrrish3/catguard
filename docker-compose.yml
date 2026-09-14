@@ -1,0 +1,144 @@
+networks:
+  catguard-network:
+    driver: bridge
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
+
+services:
+  # -------------------------------------------------------
+  # PostgreSQL + PostGIS + TimescaleDB
+  # -------------------------------------------------------
+  db:
+    image: timescale/timescaledb-ha:pg16
+    container_name: catguard-db
+    environment:
+      POSTGRES_USER: catguard
+      POSTGRES_PASSWORD: catguard_secret
+      POSTGRES_DB: catguard_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/home/postgres/pgdata/data
+      - ./infra/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U catguard -d catguard_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - catguard-network
+
+  # -------------------------------------------------------
+  # Redis 7
+  # -------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: catguard-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - catguard-network
+
+  # -------------------------------------------------------
+  # MinIO (S3-compatible object storage)
+  # -------------------------------------------------------
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: catguard-minio
+    environment:
+      MINIO_ROOT_USER: catguard_minio
+      MINIO_ROOT_PASSWORD: catguard_minio_secret
+    command: server /data --console-address ':9001'
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web console
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - catguard-network
+
+  # -------------------------------------------------------
+  # pgAdmin (dev only)
+  # -------------------------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: catguard-pgadmin
+    profiles: ["dev"]
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@catguard.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - catguard-network
+
+  # -------------------------------------------------------
+  # FastAPI Backend
+  # -------------------------------------------------------
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: catguard-api
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://catguard:catguard_secret@db:5432/catguard_db
+      DATABASE_URL_SYNC: postgresql://catguard:catguard_secret@db:5432/catguard_db
+      REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./apps/api:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - catguard-network
+    restart: unless-stopped
+
+  # -------------------------------------------------------
+  # React Frontend (Vite dev server)
+  # -------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: catguard-web
+    env_file: .env
+    environment:
+      VITE_API_URL: http://localhost:8000
+      VITE_WS_URL: ws://localhost:8000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/web:/app/apps/web
+      - /app/apps/web/node_modules
+    command: pnpm dev --host 0.0.0.0 --port 3000
+    depends_on:
+      - api
+    networks:
+      - catguard-network
+    restart: unless-stopped
