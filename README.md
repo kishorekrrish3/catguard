@@ -1,8 +1,18 @@
-# CAT-Guard 🌲
+<div align="center">
+  <h1>CAT-Guard</h1>
+  <p><strong>Catchment-area forest monitoring and threat intelligence.</strong></p>
+  <p>Connect geospatial analysis, field observations, sensor telemetry, and auditable alerts in one conservation-focused platform.</p>
+  <p>
+    <img src="https://img.shields.io/badge/Frontend-React%20%2B%20TypeScript-3178C6?logo=typescript&logoColor=white" alt="React and TypeScript">
+    <img src="https://img.shields.io/badge/API-FastAPI-009688?logo=fastapi&logoColor=white" alt="FastAPI">
+    <img src="https://img.shields.io/badge/Database-PostgreSQL%20%2B%20PostGIS-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL and PostGIS">
+    <img src="https://img.shields.io/badge/License-MIT-2ea44f" alt="MIT License">
+  </p>
+</div>
 
-**Catchment Area Treatment Forest Monitoring System**
+CAT-Guard is a full-stack forest-monitoring platform concept for Catchment Area Treatment (CAT) zones. It brings together satellite imagery analysis, sensor telemetry, threat-detection workflows, geospatial dashboards, and community field reports.
 
-CAT-Guard is a full-stack, real-time forest monitoring platform that integrates satellite imagery analysis, IoT sensor networks, ML-based threat detection, and community engagement to protect Catchment Area Treatment (CAT) zones.
+> **Project status:** This repository describes an engineering platform and its intended workflows. Satellite-derived indicators, ML detection, sensor readings, maps, and alerts should be validated against real data and field conditions before being used for environmental or operational decisions.
 
 ---
 
@@ -56,7 +66,7 @@ CAT-Guard is a full-stack, real-time forest monitoring platform that integrates 
 ### 1. Clone and configure
 
 ```bash
-git clone https://github.com/your-org/catguard.git
+git clone https://github.com/kishorekrrish3/catguard.git
 cd catguard
 cp .env.example .env
 # Edit .env and set SECRET_KEY to a random 32+ char string
@@ -82,17 +92,10 @@ docker compose exec api alembic upgrade head
 docker compose exec api python scripts/seed.py
 ```
 
-### 4. Login
+### 4. Configure access
 
-Default credentials (after seeding):
+Use the account and password configuration defined by your local environment and seed setup. Do not publish shared demo credentials or deploy with predictable passwords. For any deployment, provision unique credentials, set a strong secret key, and disable or change any development-only accounts before exposing the service.
 
-| Role | Email | Password |
-|---|---|---|
-| Forest Manager | manager@catguard.com | CatGuard@123 |
-| Field Officer | officer@catguard.com | CatGuard@123 |
-| Data Analyst | analyst@catguard.com | CatGuard@123 |
-| Community Reporter | reporter@catguard.com | CatGuard@123 |
-| Administrator | admin@catguard.com | CatGuard@123 |
 
 ---
 
